@@ -34,6 +34,8 @@ Route::group(['middleware' => 'jwt.cookie', 'api'], function ($routes) {
         Route::group(['prefix' => '/applications'], function(){
             Route::post('', [ApplicationController::class, 'index']);
             Route::post('/apply', [ApplicationController::class, 'apply']);
+            Route::post('/approve', [ApplicationController::class, 'approve']);
+            Route::post('/reject', [ApplicationController::class, 'reject']);
         });
     });
     Route::get('/categories', [CategoryController::class, 'categories']);
