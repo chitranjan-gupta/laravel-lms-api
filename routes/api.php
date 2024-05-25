@@ -28,10 +28,18 @@ Route::group(['middleware' => 'jwt.cookie', 'api'], function ($routes) {
     });
     Route::group(['prefix' => '/admin'], function () {
         Route::post('/courses', [AdminController::class, 'courses']);
-        Route::post('/categories', [AdminController::class, 'categories']);
+        Route::post('/chapter', [AdminController::class, 'chapter']);
+        Route::post('/lecture', [AdminController::class, 'lecture']);
+        Route::post('/analytics', [AdminController::class, 'analytics']);
+        Route::group(['prefix' => '/categories'], function () {
+            Route::post('', [AdminController::class, 'categories']);
+            Route::post('/add', [AdminController::class, 'addCategory']);
+            Route::post('/edit', [AdminController::class, 'editCategory']);
+            Route::post('/delete', [AdminController::class, 'deleteCategory']);
+        });
         Route::post('/users', [AdminController::class, 'users']);
         Route::post('/subadmins', [AdminController::class, 'subadmins']);
-        Route::group(['prefix' => '/applications'], function(){
+        Route::group(['prefix' => '/applications'], function () {
             Route::post('', [ApplicationController::class, 'index']);
             Route::post('/apply', [ApplicationController::class, 'apply']);
             Route::post('/approve', [ApplicationController::class, 'approve']);

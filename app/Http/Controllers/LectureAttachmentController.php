@@ -13,27 +13,53 @@ class LectureAttachmentController extends Controller
 {
     public function create(Request $request, $courseId, $chapterId, $lectureId)
     {
-        if (Auth::user()) {
+        $user = Auth::user();
+        if ($user && $user->role == "subadmin") {
             if ($courseId) {
                 if ($request->has('url')) {
-                    $user = Auth::user();
                     $url = $request->input('url');
                     $courseOwner = Course::where('id', $courseId)->where('userId', $user->id)->first();
                     if (!$courseOwner) {
                         return response("Unauthorized", 401);
                     }
-                    $chapterOwner = Chapter::where('id', $chapterId)->where('courseId', $courseId)->first();
+                    $chapterOwner = Chapter::where('id', $chapterId)->where('courseId', $courseOwner->id)->first();
                     if (!$chapterOwner) {
                         return response("Unauthorized", 401);
                     }
-                    $lectureOwner = Lecture::where('id', $lectureId)->where('chapterId', $chapterId)->where('courseId', $courseId)->first();
+                    $lectureOwner = Lecture::where('id', $lectureId)->where('chapterId', $chapterOwner->id)->where('courseId', $courseOwner->id)->first();
                     if (!$lectureOwner) {
                         return response("Unauthorized", 401);
                     }
                     $attachment = LectureAttachment::create([
                         'url' => $url,
                         'name' => basename($url),
-                        'lectureId' => $lectureId
+                        'lectureId' => $lectureOwner->id
+                    ]);
+                    return response()->json($attachment, 200);
+                }
+            } else {
+                return response("Not Found", 404);
+            }
+        } else if ($user && $user->role == "admin") {
+            if ($courseId) {
+                if ($request->has('url')) {
+                    $url = $request->input('url');
+                    $course = Course::where('id', $courseId)->first();
+                    if (!$course) {
+                        return response("Not Found", 404);
+                    }
+                    $chapter = Chapter::where('id', $chapterId)->where('courseId', $course->id)->first();
+                    if (!$chapter) {
+                        return response("Not Found", 404);
+                    }
+                    $lecture = Lecture::where('id', $lectureId)->where('chapterId', $chapter->id)->where('courseId', $course->id)->first();
+                    if (!$lecture) {
+                        return response("Not Found", 404);
+                    }
+                    $attachment = LectureAttachment::create([
+                        'url' => $url,
+                        'name' => basename($url),
+                        'lectureId' => $lecture->id
                     ]);
                     return response()->json($attachment, 200);
                 }
@@ -47,23 +73,46 @@ class LectureAttachmentController extends Controller
 
     public function delete($courseId, $chapterId, $lectureId, $attachmentId)
     {
-        if (Auth::user()) {
+        $user = Auth::user();
+        if ($user && $user->role == "subadmin") {
             if ($courseId) {
                 if ($attachmentId) {
-                    $user = Auth::user();
                     $courseOwner = Course::where('id', $courseId)->where('userId', $user->id)->first();
                     if (!$courseOwner) {
                         return response("Unauthorized", 401);
                     }
-                    $chapterOwner = Chapter::where('id', $chapterId)->where('courseId', $courseId)->first();
+                    $chapterOwner = Chapter::where('id', $chapterId)->where('courseId', $courseOwner->id)->first();
                     if (!$chapterOwner) {
                         return response("Unauthorized", 401);
                     }
-                    $lectureOwner = Lecture::where('id', $lectureId)->where('chapterId', $chapterId)->where('courseId', $courseId)->first();
+                    $lectureOwner = Lecture::where('id', $lectureId)->where('chapterId', $chapterOwner->id)->where('courseId', $courseOwner->id)->first();
                     if (!$lectureOwner) {
                         return response("Unauthorized", 401);
                     }
-                    $attachment = LectureAttachment::where('lectureId', $lectureId)->where('id', $attachmentId)->delete();
+                    $attachment = LectureAttachment::where('lectureId', $lectureOwner->id)->where('id', $attachmentId)->delete();
+                    return response()->json($attachment);
+                } else {
+                    return response("Not Found", 404);
+                }
+            } else {
+                return response("Not Found", 404);
+            }
+        } else if ($user && $user->role == "admin") {
+            if ($courseId) {
+                if ($attachmentId) {
+                    $course = Course::where('id', $courseId)->first();
+                    if (!$course) {
+                        return response("Not Found", 404);
+                    }
+                    $chapter = Chapter::where('id', $chapterId)->where('courseId', $course->id)->first();
+                    if (!$chapter) {
+                        return response("Not Found", 404);
+                    }
+                    $lecture = Lecture::where('id', $lectureId)->where('chapterId', $chapter->id)->where('courseId', $course->id)->first();
+                    if (!$lecture) {
+                        return response("Not Found", 404);
+                    }
+                    $attachment = LectureAttachment::where('lectureId', $lecture->id)->where('id', $attachmentId)->delete();
                     return response()->json($attachment);
                 } else {
                     return response("Not Found", 404);

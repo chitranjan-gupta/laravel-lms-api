@@ -82,8 +82,8 @@ class CourseController extends Controller
 
     public function create(Request $request)
     {
-        if (Auth::user()) {
-            $user = Auth::user();
+        $user = Auth::user();
+        if ($user && ($user->role == "subadmin" || $user->role == "admin")) {
             if ($request->has('title')) {
                 $title = $request->input('title');
                 $course = Course::create([
@@ -101,12 +101,23 @@ class CourseController extends Controller
 
     public function set(Request $request, $courseId)
     {
-        if (Auth::user()) {
+        $user = Auth::user();
+        if ($user && $user->role == "subadmin") {
             if ($courseId) {
-                $user = Auth::user();
                 $course = Course::where('id', $courseId)->where('userId', $user->id)->first();
                 if (!$course) {
                     return response("Unauthorized", 401);
+                }
+                $course->update($request->all());
+                return response()->json($course, 200);
+            } else {
+                return response("Not Found", 404);
+            }
+        } else if ($user && $user->role == "admin") {
+            if ($courseId) {
+                $course = Course::where('id', $courseId)->first();
+                if (!$course) {
+                    return response("Not Found", 404);
                 }
                 $course->update($request->all());
                 return response()->json($course, 200);
@@ -120,29 +131,52 @@ class CourseController extends Controller
 
     public function delete($courseId)
     {
-        if ($courseId) {
-            if (auth()->user()) {
-                $userId = auth()->user()->id;
-                $course = Course::where('id', $courseId)->where('userId', $userId)->with(['chapters.lectures.muxData']);
+        $user = Auth::user();
+        if ($user && $user->role == "subadmin") {
+            if ($courseId) {
+                $course = Course::where('id', $courseId)->where('userId', $user->id)->with(['chapters.lectures.muxData']);
                 if (!$course) {
                     return response("Unauthorized", 401);
                 }
-                
             } else {
-                return response("Unauthorized", 401);
+                return response("Not Found", 404);
             }
+        } else if ($user && $user->role == "admin") {
+            if ($courseId) {
+                $course = Course::where('id', $courseId)->with(['chapters.lectures.muxData'])->first();
+                if (!$course) {
+                    return response("Not Found", 404);
+                }
+            } else {
+                return response("Not Found", 404);
+            }
+        } else {
+            return response("Unauthorized", 401);
         }
-        return response("Not Found", 404);
     }
 
     public function publish($courseId)
     {
-        if (Auth::user()) {
+        $user = Auth::user();
+        if ($user && $user->role == "subadmin") {
             if ($courseId) {
-                $user = Auth::user();
                 $course = Course::where('id', $courseId)->where('userId', $user->id)->with(['chapters'])->first();
                 if (!$course) {
                     return response('Unauthorized', 401);
+                }
+                if (!$course->title || !$course->description || !$course->imageUrl || !$course->categoryId || !$course->chapters->contains('isPublished', true)) {
+                    return response('Missing required fields', 400);
+                }
+                $course->update(['isPublished' => true]);
+                return response()->json($course, 200);
+            } else {
+                return response('Not Found', 404);
+            }
+        } else if ($user && $user->role == "admin") {
+            if ($courseId) {
+                $course = Course::where('id', $courseId)->with(['chapters'])->first();
+                if (!$course) {
+                    return response('Not Found', 404);
                 }
                 if (!$course->title || !$course->description || !$course->imageUrl || !$course->categoryId || !$course->chapters->contains('isPublished', true)) {
                     return response('Missing required fields', 400);
@@ -159,12 +193,23 @@ class CourseController extends Controller
 
     public function unpublish($courseId)
     {
-        if (Auth::user()) {
+        $user = Auth::user();
+        if ($user && $user->role == "subadmin") {
             if ($courseId) {
-                $user = Auth::user();
                 $course = Course::where('id', $courseId)->where('userId', $user->id)->with(['chapters'])->first();
                 if (!$course) {
                     return response('Unauthorized', 401);
+                }
+                $course->update(['isPublished' => false]);
+                return response()->json($course, 200);
+            } else {
+                return response('Not Found', 404);
+            }
+        } else if ($user && $user->role == "admin") {
+            if ($courseId) {
+                $course = Course::where('id', $courseId)->with(['chapters'])->first();
+                if (!$course) {
+                    return response('Not Found', 404);
                 }
                 $course->update(['isPublished' => false]);
                 return response()->json($course, 200);

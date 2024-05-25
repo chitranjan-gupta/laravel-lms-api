@@ -11,10 +11,10 @@ class CourseAttachmentController extends Controller
 {
     public function create(Request $request, $courseId)
     {
-        if (Auth::user()) {
+        $user = Auth::user();
+        if ($user && $user->role == "subadmin") {
             if ($courseId) {
                 if ($request->has('url')) {
-                    $user = Auth::user();
                     $url = $request->input('url');
                     $courseOwner = Course::where('id', $courseId)->where('userId', $user->id)->first();
                     if (!$courseOwner) {
@@ -23,7 +23,25 @@ class CourseAttachmentController extends Controller
                     $attachment = CourseAttachment::create([
                         'url' => $url,
                         'name' => basename($url),
-                        'courseId' => $courseId
+                        'courseId' => $courseOwner->id
+                    ]);
+                    return response()->json($attachment, 200);
+                }
+            } else {
+                return response("Not Found", 404);
+            }
+        } else if ($user && $user->role == "admin") {
+            if ($courseId) {
+                if ($request->has('url')) {
+                    $url = $request->input('url');
+                    $course = Course::where('id', $courseId)->first();
+                    if (!$course) {
+                        return response("Not Found", 404);
+                    }
+                    $attachment = CourseAttachment::create([
+                        'url' => $url,
+                        'name' => basename($url),
+                        'courseId' => $course->id
                     ]);
                     return response()->json($attachment, 200);
                 }
@@ -37,15 +55,30 @@ class CourseAttachmentController extends Controller
 
     public function delete($courseId, $attachmentId)
     {
-        if (Auth::user()) {
+        $user = Auth::user();
+        if ($user && $user->role == "subadmin") {
             if ($courseId) {
                 if ($attachmentId) {
-                    $user = Auth::user();
                     $courseOwner = Course::where('id', $courseId)->where('userId', $user->id)->first();
                     if (!$courseOwner) {
                         return response("Unauthorized", 401);
                     }
-                    $attachment = CourseAttachment::where('courseId', $courseId)->where('id', $attachmentId)->delete();
+                    $attachment = CourseAttachment::where('courseId', $courseOwner->id)->where('id', $attachmentId)->delete();
+                    return response()->json($attachment);
+                } else {
+                    return response("Not Found", 404);
+                }
+            } else {
+                return response("Not Found", 404);
+            }
+        } else if ($user && $user->role == "admin") {
+            if ($courseId) {
+                if ($attachmentId) {
+                    $course = Course::where('id', $courseId)->first();
+                    if (!$course) {
+                        return response("Not Found", 404);
+                    }
+                    $attachment = CourseAttachment::where('courseId', $course->id)->where('id', $attachmentId)->delete();
                     return response()->json($attachment);
                 } else {
                     return response("Not Found", 404);

@@ -34,25 +34,45 @@ class UserController extends Controller
 
     public function index(Request $request)
     {
-        if ($request->has('userId') && $request->has('courseId')) {
-            $userId = $request->input('userId');
-            $courseId = $request->input('courseId');
-            $course = Course::where('id', $courseId)
-                ->where('userId', $userId)
-                ->with(['chapters' => function ($query) {
-                    $query
-                        ->orderBy('position', 'asc');
-                }, 'attachments' => function ($query) {
-                    $query
-                        ->orderBy('created_at', 'desc');
-                }])->first();
-            return response()->json($course, 200);
-        } else if ($request->has('userId')) {
-            $userId = $request->input('userId');
-            $course = Course::where('userId', $userId)->orderBy('created_at', 'desc')->get();
-            return response()->json($course, 200);
+        $user = Auth::user();
+        if ($user && $user->role == "subadmin") {
+            if ($request->has('userId') && $request->has('courseId')) {
+                $userId = $request->input('userId');
+                $courseId = $request->input('courseId');
+                $course = Course::where('id', $courseId)
+                    ->where('userId', $userId)
+                    ->with(['chapters' => function ($query) {
+                        $query
+                            ->orderBy('position', 'asc');
+                    }, 'attachments' => function ($query) {
+                        $query
+                            ->orderBy('created_at', 'desc');
+                    }])->first();
+                return response()->json($course, 200);
+            } else if ($request->has('userId')) {
+                $userId = $request->input('userId');
+                $course = Course::where('userId', $userId)->orderBy('created_at', 'desc')->get();
+                return response()->json($course, 200);
+            }
+            return response("Not Found", 404);
+        } else if ($user && $user->role == "admin") {
+            if ($request->has('courseId')) {
+                $courseId = $request->input('courseId');
+                $course = Course::where('id', $courseId)
+                    ->with(['chapters' => function ($query) {
+                        $query
+                            ->orderBy('position', 'asc');
+                    }, 'attachments' => function ($query) {
+                        $query
+                            ->orderBy('created_at', 'desc');
+                    }])->first();
+                return response()->json($course, 200);
+            }else{
+                return response('Not Found', 404);
+            }
+        } else {
+            return response('Unauthorized', 401);
         }
-        return response("Not Found", 404);
     }
 
     public function chapter(Request $request)
@@ -69,7 +89,7 @@ class UserController extends Controller
             return response()->json($chapter, 200);
         } else if ($request->has('userId') && $request->has('courseId')) {
             $courseId = $request->input('courseId');
-            $publishedChapters = Chapter::where('courseId', $courseId)->where('isPublished', true)->pluck('id');
+            $publishedChapters = Chapter::where('courseId', $courseId)->where('isPublished', true)->get();
             return response()->json($publishedChapters, 200);
         }
         return response("Not Found", 404);
