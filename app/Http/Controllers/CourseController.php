@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ChapterAttachment;
 use App\Models\Course;
+use App\Models\MuxData;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -74,7 +76,7 @@ class CourseController extends Controller
                         $query->where('isPublished', true)
                             ->orderBy('position', 'asc');
                     }]);
-            }])->find($courseId);
+            }, 'attachments'])->find($courseId);
             return response()->json($course, 200);
         }
         return response("Not Found", 404);
@@ -134,24 +136,28 @@ class CourseController extends Controller
         $user = Auth::user();
         if ($user && $user->role == "subadmin") {
             if ($courseId) {
-                $course = Course::where('id', $courseId)->where('userId', $user->id)->with(['chapters.lectures.muxData']);
-                if (!$course) {
+                $courseOwner = Course::where('id', $courseId)->where('userId', $user->id)->first();
+                if (!$courseOwner) {
                     return response("Unauthorized", 401);
                 }
+                $courseOwner->delete();
+                return response()->json($courseOwner, 200);
             } else {
-                return response("Not Found", 404);
+                return response('Not Found', 404);
             }
         } else if ($user && $user->role == "admin") {
             if ($courseId) {
-                $course = Course::where('id', $courseId)->with(['chapters.lectures.muxData'])->first();
-                if (!$course) {
-                    return response("Not Found", 404);
+                $courseOwner = Course::where('id', $courseId)->where('userId', $user->id)->first();
+                if (!$courseOwner) {
+                    return response("Unauthorized", 401);
                 }
+                $courseOwner->delete();
+                return response()->json($courseOwner, 200);
             } else {
-                return response("Not Found", 404);
+                return response('Not Found', 404);
             }
         } else {
-            return response("Unauthorized", 401);
+            return response('Unauthorized', 401);
         }
     }
 
