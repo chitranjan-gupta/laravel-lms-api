@@ -1,4 +1,4 @@
-FROM php:8.2.19-zts  # Use php:8.2.19-zts for Ubuntu base
+FROM php:8.2.19-zts
 
 WORKDIR /var/www/html
 
