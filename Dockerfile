@@ -2,7 +2,7 @@ FROM php:8.2.19-zts-alpine3.20
 
 WORKDIR /var/www/html
 
-RUN apk update && RUN curl -sS https://getcomposer.org/installer | php -- --version=2.7.6 --install-dir=/usr/local/bin --filename=composer
+RUN apk update && RUN apk add --no-cache curl php-composer
 
 COPY . .
 
