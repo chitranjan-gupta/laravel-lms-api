@@ -1,8 +1,8 @@
-FROM php:8.3.7-zts 
+FROM php:8.3.7-zts-alpine3.16
 
 WORKDIR /var/www/html
 
-RUN apt update && RUN apt-get install -y curl php-composer
+RUN apk update && RUN curl -sS https://getcomposer.org/installer | php -- --version=2.7.6 --install-dir=/usr/local/bin --filename=composer
 
 COPY . .
 
