@@ -1,8 +1,8 @@
-FROM php:8.2.19-zts-alpine3.20
+FROM php:8.2.19-zts  # Use php:8.2.19-zts for Ubuntu base
 
 WORKDIR /var/www/html
 
-RUN apk update && RUN apk add --no-cache curl php-composer
+RUN apt update && RUN apt-get install -y curl php-composer
 
 COPY . .
 
