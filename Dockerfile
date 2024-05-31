@@ -21,7 +21,6 @@ RUN curl -sS https://getcomposer.org/installer | php -- --version=2.7.6 --instal
 
 COPY . .
 
-RUN composer install
-RUN php artisan migrate
-RUN php artisan db:seed
+RUN composer install && php artisan migrate && php artisan db:seed
+
 CMD ["php","artisan","serve","--host=0.0.0.0"]
