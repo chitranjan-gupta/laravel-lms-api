@@ -76,7 +76,7 @@ class AuthController extends Controller
         // Log::info(env('FRONTEND_APP_URL'));
 
         $response = $this->respondWithToken($token);
-        $cookie = cookie('access_token', $token, auth()->factory()->getTTL() * 60 * 60, "/", null, true, true, false, 'None');
+        $cookie = cookie('access_token', $token, auth()->factory()->getTTL(), "/", null, true, true, false, 'None');
         return response()->json([...$response, "userId" => $user->id, "email" => $user->email, "name" => $user->name, "role" => $user->role], 200)->cookie($cookie);
     }
 
@@ -88,7 +88,7 @@ class AuthController extends Controller
             'message' => 'You have logined successfully !',
             'token_type' => 'Bearer',
             'access_token' => $token,
-            'expiry_in' => auth()->factory()->getTTL() * 60
+            'expiry_in' => auth()->factory()->getTTL()
         ];
     }
 
@@ -98,7 +98,7 @@ class AuthController extends Controller
             $user = Auth::user();
             $token = auth()->refresh(true);
             $response = $this->respondWithToken($token);
-            $cookie = cookie('access_token', $token, auth()->factory()->getTTL() * 60);
+            $cookie = cookie('access_token', $token, auth()->factory()->getTTL());
             return response()->json([...$response, "userId" => $user->id, "email" => $user->email, "name" => $user->name, "role" => $user->role], 200)->cookie($cookie);
         } else {
             return response("Unauthorized", 401);
