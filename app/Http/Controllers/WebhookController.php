@@ -31,10 +31,10 @@ class WebhookController extends Controller
             );
         } catch (\UnexpectedValueException $e) {
             // Invalid payload
-            return response('Webhook Error', 400);
+            return response('Webhook UN Error', 400);
         } catch (Stripe\Exception\SignatureVerificationException $e) {
             // Invalid signature
-            return response('Webhook Error', 400);
+            return response('Webhook Sign Error', 400);
         }
 
         // Handle the event
