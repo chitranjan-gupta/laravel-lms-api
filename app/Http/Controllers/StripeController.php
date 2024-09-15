@@ -66,11 +66,88 @@ class StripeController extends Controller
 
                 if ($session) {
                     return response()->json(["url" => $session->url]);
-                }else{
+                } else {
                     return response('Unauthorized', 401);
                 }
             } else {
                 return response('Not Found', 404);
+            }
+        } else {
+            return response('Unauthorized', 401);
+        }
+    }
+
+    public function intent(Request $request)
+    {
+        if (Auth::user()) {
+            $data = $request->all();
+            if ($data && $data['courseId']) {
+                $courseId = $data['courseId'];
+                $user = Auth::user();
+                $course = Course::where('id', $courseId)->where('isPublished', true)->first();
+                if (!$course) {
+                    return response('Not Found', 404);
+                }
+                $purchase = Purchase::where('userId', $user->id)->where('courseId', $courseId)->first();
+                if ($purchase) {
+                    return response('Already Purchased', 400);
+                }
+                Stripe\Stripe::setApiKey(env('STRIPE_API_KEY'));
+
+                $stripeCustomer = StripeCustomer::where('userId', $user->id)->first();
+
+                if (!$stripeCustomer) {
+                    $customer = Stripe\Customer::create([
+                        'email' => $user->email
+                    ]);
+
+                    $stripeCustomer = StripeCustomer::create([
+                        'userId' => $user->id,
+                        'stripeCustomerId' => $customer->id
+                    ]);
+                }
+
+                $ephemeralKey = Stripe\EphemeralKey::create(['customer' => $stripeCustomer->stripeCustomerId, 'stripe_version' => "2024-06-20"]);
+
+                $paymentIntent = Stripe\PaymentIntent::create([
+                    'amount' => round($course->price * 100),
+                    'currency' => 'inr',
+                    'customer' => $stripeCustomer->stripeCustomerId,
+                    'automatic_payment_methods' => ['enabled' => true, "allow_redirects" => "never"],
+                    'metadata' => [
+                        'courseId' => $course->id,
+                        'userId' => $user->id
+                    ]
+                ]);
+
+                if ($paymentIntent) {
+                    return response()->json(["paymentIntent" => $paymentIntent, "ephemeralKey" => $ephemeralKey, "customer" => $stripeCustomer->stripeCustomerId, "userId" => $user->id]);
+                } else {
+                    return response('Unauthorized', 401);
+                }
+            }
+        } else {
+            return response('Unauthorized', 401);
+        }
+    }
+
+    public function completeIntent(Request $request)
+    {
+        if (Auth::user()) {
+            $user = Auth::user();
+            $data = $request->all();
+            if ($data && $data['payment_method_id'] && $data['payment_intent_id'] && $data['customer_id'] && $data['client_secret']) {
+                $stripe = new \Stripe\StripeClient(env('STRIPE_API_KEY'));
+                $paymentMethod = $stripe->paymentMethods->attach($data['payment_method_id'], ["customer" => $data['customer_id']]);
+                $result = $stripe->paymentIntents->confirm($data['payment_intent_id'], ["payment_method" => $paymentMethod->id]);
+                return response()->json([
+                    "success" => true,
+                    "message" => "Payment successful",
+                    "result" => $result,
+                    "userId" => $user->id
+                ]);
+            } else {
+                return response('Missing required fields', 400);
             }
         } else {
             return response('Unauthorized', 401);

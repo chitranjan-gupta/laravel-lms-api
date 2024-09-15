@@ -76,7 +76,7 @@ class CourseController extends Controller
                         $query->where('isPublished', true)
                             ->orderBy('position', 'asc');
                     }]);
-            }, 'attachments'])->find($courseId);
+            }, 'attachments', 'category'])->find($courseId);
             return response()->json($course, 200);
         }
         return response("Not Found", 404);

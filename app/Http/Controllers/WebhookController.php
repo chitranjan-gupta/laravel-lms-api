@@ -41,7 +41,15 @@ class WebhookController extends Controller
         switch ($event->type) {
             case 'payment_intent.succeeded':
                 $paymentIntent = $event->data->object;
-                Log::info('Webhook Setup completed');
+                $userId = $paymentIntent->metadata->userId;
+                $courseId = $paymentIntent->metadata->courseId;
+                if (!$userId || !$courseId) {
+                    return response('Webhook Error: Missing metadata', 400);
+                }
+                Purchase::create([
+                    'courseId' => $courseId,
+                    'userId' => $userId
+                ]);
                 break;
             case 'checkout.session.completed':
                 $session = $event->data->object;

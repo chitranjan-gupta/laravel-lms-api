@@ -90,6 +90,8 @@ Route::group(['middleware' => 'jwt.cookie', 'api'], function ($routes) {
                 Route::put('/reorder', [ChapterController::class, 'reorder']);
             });
             Route::post('/checkout', [StripeController::class, 'checkout']);
+            Route::post('/intent', [StripeController::class, 'intent']);
+            Route::post('/completeintent', [StripeController::class, 'completeIntent']);
             Route::patch('/publish', [CourseController::class, 'publish']);
             Route::patch('/unpublish', [CourseController::class, 'unpublish']);
         });

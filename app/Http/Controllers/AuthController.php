@@ -60,7 +60,7 @@ class AuthController extends Controller
             $loggedin = false;
             $token = '';
             $user = null;
-            if ($log2 = Auth::attempt($loginEmail)) {
+            if ($log2 = auth('api')->attempt($loginEmail)) {
                 $loggedin = true;
                 $token = $log2;
                 global $user;
@@ -94,21 +94,23 @@ class AuthController extends Controller
 
     public function refresh()
     {
-        if (Auth::user()) {
-            $user = Auth::user();
-            $token = auth()->refresh(true);
+        try {
+            $token = auth('api')->refresh();
+            $user = auth()->user();
             $response = $this->respondWithToken($token);
             $cookie = cookie('access_token', $token, auth()->factory()->getTTL());
             return response()->json([...$response, "userId" => $user->id, "email" => $user->email, "name" => $user->name, "role" => $user->role], 200)->cookie($cookie);
-        } else {
+        } catch (\Tymon\JWTAuth\Exceptions\TokenBlacklistedException $e) {
             return response("Unauthorized", 401);
+        } catch (\Tymon\JWTAuth\Exceptions\JWTException $e) {
+            return response("Token Not Present or Invalid", 401);
         }
     }
 
     public function logout()
     {
         if (auth()->user()) {
-            auth()->logout(true);
+            auth('api')->logout(true);
             $cookie = cookie('access_token', null);
             return response()->json([
                 'status' => 200,
