@@ -30,14 +30,22 @@ sudo apt update
 ```
 6. Install php and pdo_mysql extension
 ```sh
-sudo apt install php8.2 php8.2-mysql php8.2-dom
+sudo apt install php8.2 php8.2-mysql php8.2-dom php8.2-curl
 ```
-7. Install the php and nodejs libraries
+7. Find the default version of php installed
+```sh
+sudo update-alternatives --display php
+```
+8. Change the default version to use php8.2
+```sh
+sudo update-alternatives --set php /usr/bin/php8.2
+```
+9. Install the php and nodejs libraries
 ```sh
 composer install
 npm install
 ```
-8. Add .env file
+10. Add .env file
 ```
 FRONTEND_APP_URL = frontend url required for CORS(cross-origin)
 APP_URL = backend url required for building the asset using vite

@@ -7,6 +7,7 @@ use App\Models\Purchase;
 use App\Models\StripeCustomer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Stripe;
 
 class StripeController extends Controller
@@ -106,21 +107,31 @@ class StripeController extends Controller
                         'stripeCustomerId' => $customer->id
                     ]);
                 }
-
-                $ephemeralKey = Stripe\EphemeralKey::create(['customer' => $stripeCustomer->stripeCustomerId, 'stripe_version' => "2024-06-20"]);
+                
+                $ephemeralKey = Stripe\EphemeralKey::create(["customer" => $stripeCustomer->stripeCustomerId],["stripe_version" => "2024-06-20"]);
 
                 $paymentIntent = Stripe\PaymentIntent::create([
                     'amount' => round($course->price * 100),
                     'currency' => 'inr',
                     'customer' => $stripeCustomer->stripeCustomerId,
+                    'description' => $course->description,
+                    'shipping' => [
+                        'name' => $user->name,
+                        'address' => [
+                            'line1' => env('STRIPE_TEMP_ADDRESS_LINE1'),
+                            'postal_code' =>  env('STRIPE_TEMP_ADDRESS_POSTAL_CODE'),
+                            'city' =>  env('STRIPE_TEMP_ADDRESS_CITY'),
+                            'state' =>  env('STRIPE_TEMP_ADDRESS_STATE'),
+                            'country' =>  env('STRIPE_TEMP_ADDRESS_COUNTRY'),
+                        ],
+                    ],
                     'automatic_payment_methods' => ['enabled' => true, "allow_redirects" => "never"],
                     'metadata' => [
                         'courseId' => $course->id,
                         'userId' => $user->id
                     ]
                 ]);
-
-                if ($paymentIntent) {
+                if ($paymentIntent && $ephemeralKey) {                    
                     return response()->json(["paymentIntent" => $paymentIntent, "ephemeralKey" => $ephemeralKey, "customer" => $stripeCustomer->stripeCustomerId, "userId" => $user->id]);
                 } else {
                     return response('Unauthorized', 401);
