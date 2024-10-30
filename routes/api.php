@@ -3,12 +3,15 @@
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\ApplicationController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\CareerController;
+use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\ChapterAttachmentController;
 use App\Http\Controllers\ChapterController;
 use App\Http\Controllers\ChapterProgressController;
 use App\Http\Controllers\CourseAttachmentController;
 use App\Http\Controllers\CourseController;
+use App\Http\Controllers\KanbanController;
 use App\Http\Controllers\LectureAttachmentController;
 use App\Http\Controllers\LectureController;
 use App\Http\Controllers\LectureProgressController;
@@ -102,6 +105,45 @@ Route::group(['middleware' => 'jwt.cookie', 'api'], function ($routes) {
             Route::post('/lecture', [UserController::class, 'lecture']);
             Route::post('/progress', [UserController::class, 'progress']);
             Route::post('/purchase', [UserController::class, 'purchase']);
+        });
+    });
+    Route::group(['prefix' => '/companies'], function(){
+        Route::get('', [CompanyController::class, 'all']);
+        Route::post('', [CompanyController::class, 'create']);
+        Route::group(['prefix' => '/{companyId}'], function(){
+            Route::get('', [CompanyController::class, 'get']);
+            Route::patch('', [CompanyController::class, 'set']);
+            Route::delete('', [CompanyController::class, 'delete']);
+            Route::group(['prefix' => '/careers'], function(){
+                Route::get('', [CareerController::class, 'all']);
+                Route::post('', [CareerController::class, 'create']);
+                Route::group(['prefix' => '/{careerId}'], function(){
+                    Route::get('', [CareerController::class, 'get']);
+                    Route::patch('', [CareerController::class, 'set']);
+                    Route::delete('', [CareerController::class, 'delete']);
+                });        
+            });
+        });
+    });
+    Route::group(['prefix' => '/careers'], function(){
+        Route::get('', [CareerController::class, 'all']);
+        Route::group(['prefix' => '/{careerId}'], function(){
+            Route::get('', [CareerController::class, 'find']);
+        });
+    });
+    Route::group(['prefix' => '/kanban'], function(){
+        Route::group(['prefix' => '/columns'], function(){
+            Route::get('', [KanbanController::class, 'all_columns']);
+            Route::post('', [KanbanController::class, 'create_column']);
+            Route::patch('', [KanbanController::class, 'edit_column']);
+            Route::delete('', [KanbanController::class, 'delete_column']);
+        });
+        Route::group(['prefix' => '/rows'], function(){
+            Route::get('', [KanbanController::class, 'all_rows']);
+            Route::post('', [KanbanController::class, 'create_row']);
+            Route::patch('', [KanbanController::class, 'edit_row']);
+            Route::delete('', [KanbanController::class, 'delete_row']);
+            Route::post('/reorder', [KanbanController::class, 'reorder']);
         });
     });
     Route::post('/purchases', [PurchaseController::class, 'purchases']);
