@@ -20,13 +20,13 @@ class DatabaseSeeder extends Seeder
         //     'name' => 'Test User',
         //     'email' => 'test@example.com',
         // ]);
-        $user = User::where('email', 'admin@gmail.com')->first();
+        $user = User::where('email', env('ADMIN_EMAIL'))->first();
         if(!$user){
             User::create([
                 'name' => 'admin',
                 'username' => 'admin',
-                'email' => 'admin@gmail.com',
-                'password' => Hash::make('admin@gmail.com'),
+                'email' => env('ADMIN_EMAIL'),
+                'password' => Hash::make(env('ADMIN_EMAIL')),
                 'role' => 'admin'
             ]);
         }

@@ -17,6 +17,7 @@ use App\Http\Controllers\LectureController;
 use App\Http\Controllers\LectureProgressController;
 use App\Http\Controllers\PurchaseController;
 use App\Http\Controllers\StripeController;
+use App\Http\Controllers\NotificationController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\WebhookController;
@@ -40,14 +41,29 @@ Route::group(['middleware' => 'jwt.cookie', 'api'], function ($routes) {
             Route::post('/edit', [AdminController::class, 'editCategory']);
             Route::post('/delete', [AdminController::class, 'deleteCategory']);
         });
-        Route::post('/users', [AdminController::class, 'users']);
-        Route::post('/subadmins', [AdminController::class, 'subadmins']);
+        Route::group(['prefix' => '/users'], function(){
+            Route::get('', [AdminController::class, 'users']);
+            Route::delete('', [AdminController::class, 'delete_users']);
+        });
+        Route::group(['prefix' => '/subadmins'], function() {
+            Route::get('', [AdminController::class, 'subadmins']);
+            Route::delete('', [AdminController::class, 'delete_subadmins']);
+        });
         Route::group(['prefix' => '/applications'], function () {
             Route::post('', [ApplicationController::class, 'index']);
             Route::post('/apply', [ApplicationController::class, 'apply']);
             Route::post('/approve', [ApplicationController::class, 'approve']);
             Route::post('/reject', [ApplicationController::class, 'reject']);
         });
+        Route::group(['prefix' => '/notifications'], function() {
+            Route::get('', [NotificationController::class, 'all']);
+            Route::delete('', [NotificationController::class, 'delete']);
+        });
+    });
+    Route::group(['prefix' => '/notifications'], function() {
+        Route::get('', [NotificationController::class, 'read']);
+        Route::post('', [NotificationController::class, 'add']);
+        Route::delete('', [NotificationController::class, 'delete']);
     });
     Route::get('/categories', [CategoryController::class, 'categories']);
     Route::group(['prefix' => '/courses'], function () {
@@ -126,7 +142,7 @@ Route::group(['middleware' => 'jwt.cookie', 'api'], function ($routes) {
         });
     });
     Route::group(['prefix' => '/careers'], function(){
-        Route::get('', [CareerController::class, 'all']);
+        Route::get('', [CareerController::class, 'careers']);
         Route::group(['prefix' => '/{careerId}'], function(){
             Route::get('', [CareerController::class, 'find']);
         });
@@ -144,6 +160,7 @@ Route::group(['middleware' => 'jwt.cookie', 'api'], function ($routes) {
             Route::patch('', [KanbanController::class, 'edit_row']);
             Route::delete('', [KanbanController::class, 'delete_row']);
             Route::post('/reorder', [KanbanController::class, 'reorder']);
+            Route::post('/bookmark', [KanbanController::class, 'bookmark_row']);
         });
     });
     Route::post('/purchases', [PurchaseController::class, 'purchases']);

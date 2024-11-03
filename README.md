@@ -40,12 +40,19 @@ sudo update-alternatives --display php
 ```sh
 sudo update-alternatives --set php /usr/bin/php8.2
 ```
-9. Install the php and nodejs libraries
+9. Install Nodejs and npm
+```sh
+sudo apt install nodejs
+```
+10. Install composer
+```sh
+```
+11. Install the php and nodejs libraries
 ```sh
 composer install
 npm install
 ```
-10. Add .env file
+12. Add .env file
 ```
 FRONTEND_APP_URL = frontend url required for CORS(cross-origin)
 APP_URL = backend url required for building the asset using vite

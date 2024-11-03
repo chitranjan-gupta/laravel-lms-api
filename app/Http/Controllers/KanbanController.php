@@ -145,7 +145,31 @@ class KanbanController extends Controller
                 $row = KanbanRow::create(['title' => $title, 'subtitle' => $subtitle, 'position' => $newPosition, 'kanbanColumnId' => $columnId]);
                 return response()->json($row, 200);
             } else {
-                return response("Name or position is missing", 400);
+                return response("title or subtitle is missing", 400);
+            }
+        } else {
+            return response("Unauthorised", 401);
+        }
+    }
+
+    public function bookmark_row(Request $request)
+    {
+        $user = Auth::user();
+        if ($user) {
+            if ($request->has("title") && $request->has("subtitle")) {
+                $column = KanbanColumn::with(['kanbanRows'])->where('userId', $user->id)->first();
+                if (!$column) {
+                    return response("Unauthorised", 401);
+                }
+                $lastRow = KanbanRow::where('kanbanColumnId', $column->id)->orderBy('position', 'desc')->first();
+                $newPosition = $lastRow ? $lastRow->position + 1 : 1;
+                $title = $request->input("title");
+                $subtitle = $request->input("subtitle");
+                $row = KanbanRow::create(['title' => $title, 'subtitle' => $subtitle, 'position' => $newPosition, 'kanbanColumnId' => $column->id]);
+                $row->update($request->all());
+                return response()->json($row, 200);
+            } else {
+                return response("title or subtitle is missing", 400);
             }
         } else {
             return response("Unauthorised", 401);

@@ -23,6 +23,12 @@ class CareerController extends Controller
         }        
     }
 
+    public function careers(Request $request){
+        $perPage = $request->input('per_page', 10);
+        $careers = Career::with(['company'])->orderBy('created_at', 'desc')->paginate($perPage);
+        return response()->json($careers, 200);
+    }
+
     public function create(Request $request)
     {
         $user = Auth::user();
