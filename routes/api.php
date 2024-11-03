@@ -3,17 +3,21 @@
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\ApplicationController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\CareerController;
+use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\ChapterAttachmentController;
 use App\Http\Controllers\ChapterController;
 use App\Http\Controllers\ChapterProgressController;
 use App\Http\Controllers\CourseAttachmentController;
 use App\Http\Controllers\CourseController;
+use App\Http\Controllers\KanbanController;
 use App\Http\Controllers\LectureAttachmentController;
 use App\Http\Controllers\LectureController;
 use App\Http\Controllers\LectureProgressController;
 use App\Http\Controllers\PurchaseController;
 use App\Http\Controllers\StripeController;
+use App\Http\Controllers\NotificationController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\WebhookController;
@@ -37,14 +41,29 @@ Route::group(['middleware' => 'jwt.cookie', 'api'], function ($routes) {
             Route::post('/edit', [AdminController::class, 'editCategory']);
             Route::post('/delete', [AdminController::class, 'deleteCategory']);
         });
-        Route::post('/users', [AdminController::class, 'users']);
-        Route::post('/subadmins', [AdminController::class, 'subadmins']);
+        Route::group(['prefix' => '/users'], function(){
+            Route::get('', [AdminController::class, 'users']);
+            Route::delete('', [AdminController::class, 'delete_users']);
+        });
+        Route::group(['prefix' => '/subadmins'], function() {
+            Route::get('', [AdminController::class, 'subadmins']);
+            Route::delete('', [AdminController::class, 'delete_subadmins']);
+        });
         Route::group(['prefix' => '/applications'], function () {
             Route::post('', [ApplicationController::class, 'index']);
             Route::post('/apply', [ApplicationController::class, 'apply']);
             Route::post('/approve', [ApplicationController::class, 'approve']);
             Route::post('/reject', [ApplicationController::class, 'reject']);
         });
+        Route::group(['prefix' => '/notifications'], function() {
+            Route::get('', [NotificationController::class, 'all']);
+            Route::delete('', [NotificationController::class, 'delete']);
+        });
+    });
+    Route::group(['prefix' => '/notifications'], function() {
+        Route::get('', [NotificationController::class, 'read']);
+        Route::post('', [NotificationController::class, 'add']);
+        Route::delete('', [NotificationController::class, 'delete']);
     });
     Route::get('/categories', [CategoryController::class, 'categories']);
     Route::group(['prefix' => '/courses'], function () {
@@ -102,6 +121,46 @@ Route::group(['middleware' => 'jwt.cookie', 'api'], function ($routes) {
             Route::post('/lecture', [UserController::class, 'lecture']);
             Route::post('/progress', [UserController::class, 'progress']);
             Route::post('/purchase', [UserController::class, 'purchase']);
+        });
+    });
+    Route::group(['prefix' => '/companies'], function(){
+        Route::get('', [CompanyController::class, 'all']);
+        Route::post('', [CompanyController::class, 'create']);
+        Route::group(['prefix' => '/{companyId}'], function(){
+            Route::get('', [CompanyController::class, 'get']);
+            Route::patch('', [CompanyController::class, 'set']);
+            Route::delete('', [CompanyController::class, 'delete']);
+            Route::group(['prefix' => '/careers'], function(){
+                Route::get('', [CareerController::class, 'all']);
+                Route::post('', [CareerController::class, 'create']);
+                Route::group(['prefix' => '/{careerId}'], function(){
+                    Route::get('', [CareerController::class, 'get']);
+                    Route::patch('', [CareerController::class, 'set']);
+                    Route::delete('', [CareerController::class, 'delete']);
+                });        
+            });
+        });
+    });
+    Route::group(['prefix' => '/careers'], function(){
+        Route::get('', [CareerController::class, 'careers']);
+        Route::group(['prefix' => '/{careerId}'], function(){
+            Route::get('', [CareerController::class, 'find']);
+        });
+    });
+    Route::group(['prefix' => '/kanban'], function(){
+        Route::group(['prefix' => '/columns'], function(){
+            Route::get('', [KanbanController::class, 'all_columns']);
+            Route::post('', [KanbanController::class, 'create_column']);
+            Route::patch('', [KanbanController::class, 'edit_column']);
+            Route::delete('', [KanbanController::class, 'delete_column']);
+        });
+        Route::group(['prefix' => '/rows'], function(){
+            Route::get('', [KanbanController::class, 'all_rows']);
+            Route::post('', [KanbanController::class, 'create_row']);
+            Route::patch('', [KanbanController::class, 'edit_row']);
+            Route::delete('', [KanbanController::class, 'delete_row']);
+            Route::post('/reorder', [KanbanController::class, 'reorder']);
+            Route::post('/bookmark', [KanbanController::class, 'bookmark_row']);
         });
     });
     Route::post('/purchases', [PurchaseController::class, 'purchases']);

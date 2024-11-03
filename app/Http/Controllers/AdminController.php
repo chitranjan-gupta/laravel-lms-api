@@ -110,12 +110,52 @@ class AdminController extends Controller
         }
     }
 
+    public function delete_users(Request $request)
+    {
+        $user = Auth::user();
+        if ($user && $user->role == "admin") {
+            if($request->has("removeUserId")){
+                $removeUserId = $request->input("removeUserId");
+                $removedUser = User::where('id', $removeUserId)->where('role', 'user')->first();
+                if(!$removedUser){
+                    return response('user not found', 404);
+                }
+                $removedUser->delete();
+                return response()->json($removedUser, 200);
+            }else{
+                return response('removeUserId is missing', 400);
+            }
+        } else {
+            return response('Unauthorized', 401);
+        }
+    }
+
     public function subadmins()
     {
         $user = Auth::user();
         if ($user && $user->role == "admin") {
             $subadmins = User::where('role', 'subadmin')->get();
             return response()->json($subadmins, 200);
+        } else {
+            return response('Unauthorized', 401);
+        }
+    }
+
+    public function delete_subadmins(Request $request)
+    {
+        $user = Auth::user();
+        if ($user && $user->role == "admin") {
+            if($request->has("removeSubadminId")){
+                $removeSubadminId = $request->input("removeSubadminId");
+                $removeSubadmin = User::where('id', $removeSubadminId)->where('role', 'subadmin')->first();
+                if(!$removeSubadmin){
+                    return response('subadmin not found', 404);
+                }
+                $removeSubadmin->delete();
+                return response()->json($removeSubadmin, 200);
+            }else{
+                return response('removeSubadminId is missing', 400);
+            }
         } else {
             return response('Unauthorized', 401);
         }
