@@ -36,7 +36,8 @@ class Career extends Model
         'level',
         'experience',
         'department',
-        'companyId'
+        'companyId',
+		'career_type'
     ];
 
     protected $casts = [
