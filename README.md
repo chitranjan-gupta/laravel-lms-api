@@ -42,15 +42,17 @@ sudo update-alternatives --set php /usr/bin/php8.2
 ```
 9. Install Nodejs and npm
 ```sh
-sudo apt install nodejs
+sudo curl -fsSL https://deb.nodesource.com/setup_20.x | sudo bash - && \
+    sudo apt install -y nodejs
 ```
 10. Install composer
 ```sh
+sudo curl -sS https://getcomposer.org/installer | sudo php -- --version=2.7.6 --install-dir=/usr/local/bin --filename=composer
 ```
 11. Install the php and nodejs libraries
 ```sh
-composer install
-npm install
+sudo composer install
+sudo npm install
 ```
 12. Add .env file
 ```

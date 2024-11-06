@@ -13,14 +13,11 @@ class CareerController extends Controller
     public function all(Request $request, $companyId){
         $perPage = $request->input('per_page', 10);
         if($companyId){
-            $careers = Career::with(['company' => function($query) use ($companyId){
-                $query->where('id', $companyId);
-            }])->orderBy('created_at', 'desc')->paginate($perPage);
+            $careers = Career::with(['company'])->where('companyId', $companyId)->orderBy('created_at', 'desc')->paginate($perPage);
             return response()->json($careers, 200);
         }else{
-            $careers = Career::with(['company'])->orderBy('created_at', 'desc')->paginate($perPage);
-            return response()->json($careers, 200);
-        }        
+            return response("Company ID is missing", 400);
+        }
     }
 
     public function careers(Request $request){
