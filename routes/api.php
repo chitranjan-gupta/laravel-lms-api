@@ -24,8 +24,13 @@ use App\Http\Controllers\WebhookController;
 
 Route::group(['middleware' => 'jwt.cookie', 'api'], function ($routes) {
     Route::group(['prefix' => '/user'], function () {
-        Route::post('/signup', [AuthController::class, 'userRegister']);
-        Route::post('/signin', [AuthController::class, 'userLogin']);
+        Route::post('/signup', [AuthController::class, 'register']);
+        Route::post('/signin', [AuthController::class, 'login']);
+        Route::get('/oauth', [AuthController::class, 'oauth']);
+        Route::get('/oauth-success', [AuthController::class, 'oauth_success']);
+        Route::get('/oauth-fail', [AuthController::class, 'oauth_fail']);
+        Route::get('/oauth-me', [AuthController::class, 'oauth_me']);
+        Route::get('/oauth-update', [AuthController::class, 'oauth_update']);
         Route::get('/auth', [UserController::class, 'userProfile']);
         Route::get('/refresh', [AuthController::class, 'refresh']);
         Route::get('/logout', [AuthController::class, 'logout']);
