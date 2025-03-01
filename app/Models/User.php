@@ -67,6 +67,10 @@ class User extends Authenticatable implements JWTSubject
         ];
     }
 
+    public function autofill(){
+        return $this->hasOne(Autofill::class, 'userId', 'id');
+    }
+
     public function courses(){
         return $this->hasMany(Course::class, 'userId', 'id');
     }

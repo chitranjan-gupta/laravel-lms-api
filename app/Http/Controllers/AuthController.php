@@ -10,9 +10,22 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Laravel\Socialite\Facades\Socialite;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Validator;
 
 class AuthController extends Controller
 {
+    public function respondWithToken(string $token, int $ttl)
+    {
+        return [
+            'status' => 200,
+            'success' => true,
+            'message' => 'You have logged in successfully !',
+            'token_type' => 'Bearer',
+            'access_token' => $token,
+            'expiry_in' => $ttl * 60
+        ];
+    }
+
     public function register(Request $request)
     {
         // Validate the input data
@@ -20,7 +33,7 @@ class AuthController extends Controller
             'name' => 'required|string',
             'username' => 'required|string|unique:users',
             'email' => 'required|email|unique:users',
-            'password' => 'required|string'
+            'password' => 'required|string|min:8|regex:/[A-Z]/|regex:/[0-9]/|regex:/[@$!%*?&]/'
         ]);
 
         try {
@@ -47,18 +60,6 @@ class AuthController extends Controller
         }
     }
 
-    public function respondWithToken(string $token, int $ttl)
-    {
-            return [
-                'status' => 200,
-                'success' => true,
-                'message' => 'You have logged in successfully !',
-                'token_type' => 'Bearer',
-                'access_token' => $token,
-                'expiry_in' => $ttl * 60
-            ];
-    }
-
     public function login(Request $request)
     {
         // Validate the incoming data
@@ -79,7 +80,7 @@ class AuthController extends Controller
             $response = $this->respondWithToken($token, $ttl);
 
             // Create a secure cookie for the token
-            $cookie = cookie('access_token', $token, $ttl * 60, '/', null, true, true, false, 'None');
+            $cookie = cookie('access_token', $token, $ttl, '/', null, true, true, false, 'None');
 
             // Return a response with user info and the token in a cookie
             return response()->json([
@@ -104,7 +105,7 @@ class AuthController extends Controller
             $user = auth('api')->user();
             $ttl = auth('api')->factory()->getTTL(); // Returns the TTL in minutes, e.g., 60
             $response = $this->respondWithToken($token, $ttl);
-            $cookie = cookie('access_token', $token, $ttl * 60);
+            $cookie = cookie('access_token', $token, $ttl, '/', null, true, true, false, 'None');
             return response()->json([...$response, "userId" => $user->id, "email" => $user->email, "name" => $user->name, "role" => $user->role], 200)->cookie($cookie);
         } catch (\Tymon\JWTAuth\Exceptions\TokenBlacklistedException $e) {
             return response("Unauthorized", 401);
@@ -128,8 +129,45 @@ class AuthController extends Controller
         }
     }
 
+    public function changePassword(Request $request){
+        $user = auth('api')->user();
+        if($user){
+            $validator = Validator::make($request->all(), [
+                'currentPassword' => 'required|string',
+                'newPassword' => 'required|string|min:8|regex:/[A-Z]/|regex:/[0-9]/|regex:/[@$!%*?&]/'
+            ]);
+            $errors = $validator->errors();
+             if ($validator->fails()) {
+                return response()->json(["currentPassword" => $errors->get('currentPassword'), "newPassword" => $errors->get('newPassword')], 400);
+             }
+            $validated = $validator->validated();
+            $existingUser = User::where('id', $user->id)->first();
+            if($existingUser){
+                if(Hash::check($validated['currentPassword'], $existingUser->password)){
+                    $existingUser->password = Hash::make($validated['newPassword']);
+                    $existingUser->save();
+                    return response()->json([
+                        "message" => "Password updated successfully"
+                    ], 200);
+                } else {
+                    return response()->json([
+                        "message" => "Password does not match"
+                    ], 400);
+                }
+            } else {
+                return response("User not found", 404);
+            }
+        } else {
+            return response("Unauthorized", 401);
+        }
+    }
 
-    public function oauth(){
+    public function oauth_register(){
+        $url = Socialite::driver('google')->with(['access_type' => 'offline', 'prompt' => 'consent'])->stateless()->redirect()->getTargetUrl();
+        return response()->json(['url' => $url], 200);
+    }
+
+    public function oauth_login(){
         $url = Socialite::driver('google')->stateless()->redirect()->getTargetUrl();
         return response()->json(['url' => $url], 200);
     }
@@ -157,14 +195,15 @@ class AuthController extends Controller
 
     public function oauth_success(){
         $googleUser = Socialite::driver('google')->stateless()->user();
-        $googleData = $googleUser->getRaw();
+        Log::info(json_encode($googleUser));
         // Extract the information
         $googleId = $googleUser->getId();
         $accessToken = $googleUser->token;
-        $refreshToken = $googleData['refresh_token'] ?? null; // Access the refresh token
-        $expiresIn = $googleData['expires_in'] ?? null; // Get the expires_in field from the raw data
+        $refreshToken = $googleUser->refreshToken; // Access the refresh token
+        $expiresIn = $googleUser->expiresIn; // Get the expires_in field from the raw data
         // If expires_in is present, calculate the expiration time
         $expiresAt = $expiresIn ? now()->addSeconds($expiresIn) : null;
+        $avatarUrl = $googleUser->getAvatar();
         $name = $googleUser->getName();
         $email = $googleUser->getEmail();
         $user = User::firstOrCreate(
@@ -176,21 +215,33 @@ class AuthController extends Controller
             ]
         );
         // Now save the Google OAuth tokens in the google_oauth table
-        GoogleDetail::updateOrCreate(
-            ['google_id' => $googleId], // Google ID must be unique
-            [
-                'avatar' => $googleUser->getAvatar(),
-                'access_token' => $accessToken,
-                'refresh_token' => $refreshToken,
-                'token_type' => 'Bearer', // OAuth token type (usually Bearer)
-                'expires_at' => $expiresAt,
-                'userId' => $user->id, // Link the OAuth token to your user
-            ]
-        );
+        if($refreshToken){
+            GoogleDetail::updateOrCreate(
+                ['google_id' => $googleId], // Google ID must be unique
+                [
+                    'avatar' => $avatarUrl,
+                    'access_token' => $accessToken,
+                    'refresh_token' => $refreshToken,
+                    'token_type' => 'Bearer', // OAuth token type (usually Bearer)
+                    'expires_at' => $expiresAt,
+                    'userId' => $user->id, // Link the OAuth token to your user
+                ]
+            );
+        } else {
+            GoogleDetail::updateOrCreate(
+                ['google_id' => $googleId], // Google ID must be unique
+                [
+                    'access_token' => $accessToken,
+                    'expires_at' => $expiresAt,
+                    'userId' => $user->id, // Link the OAuth token to your user
+                ]
+            );
+        }
         $token = auth('api')->login($user);
         if($token){
-            $response = $this->respondWithToken($token);
-            $cookie = cookie('access_token', $token, auth()->factory()->getTTL(), "/", null, true, true, false, 'None');
+            $ttl = auth()->factory()->getTTL();
+            $response = $this->respondWithToken($token, $ttl);
+            $cookie = cookie('access_token', $token, $ttl, "/", null, true, true, false, 'None');
             return response()->json([...$response, "userId" => $user->id, "email" => $user->email, "name" => $user->name, "role" => $user->role], 200)->cookie($cookie);
         }else{
             return response("Unauthorized", 401);

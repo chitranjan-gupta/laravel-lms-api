@@ -19,6 +19,9 @@ class GoogleDetail extends Model
     //Indicates if the IDs are auto-incrementing
     public $incrementing = false;
 
+    protected $casts = [
+        'expires_at' => 'datetime',  // Ensure Carbon instance handling
+    ];
 
     // Define the fillable fields for mass assignment
     protected $fillable = [

@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\ApplicationController;
 use App\Http\Controllers\AuthController;
@@ -18,33 +19,36 @@ use App\Http\Controllers\LectureProgressController;
 use App\Http\Controllers\PurchaseController;
 use App\Http\Controllers\StripeController;
 use App\Http\Controllers\NotificationController;
-use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\AutofillController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\WebhookController;
+use App\Http\Controllers\FileUploadController;
 
 Route::group(['middleware' => 'jwt.cookie', 'api'], function ($routes) {
     Route::group(['prefix' => '/user'], function () {
         Route::post('/signup', [AuthController::class, 'register']);
         Route::post('/signin', [AuthController::class, 'login']);
-        Route::get('/oauth', [AuthController::class, 'oauth']);
+        Route::get('/oauth-register', [AuthController::class, 'oauth_register']);
+        Route::get('/oauth-login', [AuthController::class, 'oauth_login']);
         Route::get('/oauth-success', [AuthController::class, 'oauth_success']);
         Route::get('/oauth-fail', [AuthController::class, 'oauth_fail']);
         Route::get('/oauth-me', [AuthController::class, 'oauth_me']);
         Route::get('/oauth-update', [AuthController::class, 'oauth_update']);
         Route::get('/auth', [UserController::class, 'userProfile']);
+        Route::post('/change-password', [AuthController::class, 'changePassword']);
         Route::get('/refresh', [AuthController::class, 'refresh']);
         Route::get('/logout', [AuthController::class, 'logout']);
     });
     Route::group(['prefix' => '/admin'], function () {
-        Route::post('/courses', [AdminController::class, 'courses']);
+        Route::get('/courses', [AdminController::class, 'courses']);
         Route::post('/chapter', [AdminController::class, 'chapter']);
         Route::post('/lecture', [AdminController::class, 'lecture']);
-        Route::post('/analytics', [AdminController::class, 'analytics']);
+        Route::get('/analytics', [AdminController::class, 'analytics']);
         Route::group(['prefix' => '/categories'], function () {
-            Route::post('', [AdminController::class, 'categories']);
+            Route::get('', [AdminController::class, 'categories']);
             Route::post('/add', [AdminController::class, 'addCategory']);
-            Route::post('/edit', [AdminController::class, 'editCategory']);
-            Route::post('/delete', [AdminController::class, 'deleteCategory']);
+            Route::put('/edit', [AdminController::class, 'editCategory']);
+            Route::delete('/delete', [AdminController::class, 'deleteCategory']);
         });
         Route::group(['prefix' => '/users'], function(){
             Route::get('', [AdminController::class, 'users']);
@@ -55,7 +59,7 @@ Route::group(['middleware' => 'jwt.cookie', 'api'], function ($routes) {
             Route::delete('', [AdminController::class, 'delete_subadmins']);
         });
         Route::group(['prefix' => '/applications'], function () {
-            Route::post('', [ApplicationController::class, 'index']);
+            Route::get('', [ApplicationController::class, 'index']);
             Route::post('/apply', [ApplicationController::class, 'apply']);
             Route::post('/approve', [ApplicationController::class, 'approve']);
             Route::post('/reject', [ApplicationController::class, 'reject']);
@@ -69,6 +73,16 @@ Route::group(['middleware' => 'jwt.cookie', 'api'], function ($routes) {
         Route::get('', [NotificationController::class, 'read']);
         Route::post('', [NotificationController::class, 'add']);
         Route::delete('', [NotificationController::class, 'delete']);
+    });
+    Route::group(['prefix' => '/autofill'], function() {
+        Route::get('', [AutofillController::class, 'get']);
+        Route::get('/all', [AutofillController::class, 'getAll']);
+        Route::post('', [AutofillController::class, 'set']);
+    });
+    Route::group(['prefix' => '/storage'], function(){
+        Route::get('{any}', [FileUploadController::class, 'download'])->where('any', '.*');
+        Route::post('/upload', [FileUploadController::class, 'upload']);
+        Route::delete('{any}', [FileUploadController::class, 'download'])->where('any', '.*');
     });
     Route::get('/categories', [CategoryController::class, 'categories']);
     Route::group(['prefix' => '/courses'], function () {

@@ -52,7 +52,6 @@ class ApplicationController extends Controller
                     if ($existingUser) {
                         $existingUser->update(['role' => 'subadmin']);
                         $application->update(['isAccepted' => 'accepted']);
-                        $application->delete();
                         return response()->json($application, 200);
                     } else {
                         return response('Not Found', 404);
