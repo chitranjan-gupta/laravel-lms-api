@@ -26,7 +26,7 @@ class DatabaseSeeder extends Seeder
                 'name' => 'admin',
                 'username' => 'admin',
                 'email' => env('ADMIN_EMAIL'),
-                'password' => Hash::make(env('ADMIN_EMAIL')),
+                'password' => Hash::make(env('ADMIN_PASSWORD')),
                 'role' => 'admin'
             ]);
         }

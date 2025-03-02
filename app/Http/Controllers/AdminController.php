@@ -63,7 +63,6 @@ class AdminController extends Controller
             if ($request->has('name') && $request->has('categoryId')) {
                 $name = $request->input('name');
                 $categoryId = $request->input('categoryId');
-                Log::info($categoryId);
                 $existingCategory = Category::where('id', $categoryId)->first();
                 if (!$existingCategory) {
                     return response("Category Doesn't Exist", 400);

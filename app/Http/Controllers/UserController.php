@@ -36,8 +36,8 @@ class UserController extends Controller
     {
         $user = Auth::user();
         if ($user && $user->role == "subadmin") {
-            if ($request->has('userId') && $request->has('courseId')) {
-                $userId = $request->input('userId');
+            if ($user->id && $request->has('courseId')) {
+                $userId = $user->id;
                 $courseId = $request->input('courseId');
                 $course = Course::where('id', $courseId)
                     ->where('userId', $userId)
@@ -49,9 +49,8 @@ class UserController extends Controller
                             ->orderBy('created_at', 'desc');
                     }])->first();
                 return response()->json($course, 200);
-            } else if ($request->has('userId')) {
-                $userId = $request->input('userId');
-                $course = Course::where('userId', $userId)->orderBy('created_at', 'desc')->get();
+            } else if ($user->id) {
+                $course = Course::where('userId', $user->id)->orderBy('created_at', 'desc')->get();
                 return response()->json($course, 200);
             }
             return response("Not Found", 404);
@@ -77,7 +76,8 @@ class UserController extends Controller
 
     public function chapter(Request $request)
     {
-        if ($request->has("userId") && $request->has("courseId") && $request->has("chapterId")) {
+        $user = Auth::user();
+        if ($user->id && $request->has("courseId") && $request->has("chapterId")) {
             $courseId = $request->input('courseId');
             $chapterId = $request->input('chapterId');
             $chapter = Chapter::where("id", $chapterId)->where("courseId", $courseId)
@@ -87,7 +87,7 @@ class UserController extends Controller
                     $query->orderBy('created_at', 'desc');
                 }])->first();
             return response()->json($chapter, 200);
-        } else if ($request->has('userId') && $request->has('courseId')) {
+        } else if ($user->id && $request->has('courseId')) {
             $courseId = $request->input('courseId');
             $publishedChapters = Chapter::where('courseId', $courseId)->where('isPublished', true)->get();
             return response()->json($publishedChapters, 200);
@@ -97,7 +97,8 @@ class UserController extends Controller
 
     public function course(Request $request)
     {
-        if (($request->has('userId') && $request->has('title')) || $request->has('categoryId')) {
+        $user = Auth::user();
+        if (($user->id && $request->has('title')) || $request->has('categoryId')) {
             $courses = Course::where('isPublished', true)->when($request->has('title'), function ($query) use ($request) {
                 $query->where('title', 'like', '%' . $request->input('title') . '&');
             })->when($request->has('categoryId'), function ($query) use ($request) {
@@ -106,17 +107,17 @@ class UserController extends Controller
                 $query
                     ->where('isPublished', true);
             }, 'purchases' => function ($query) use ($request) {
-                $query->where('userId', $request->input('userId'));
+                $query->where('userId', $user->id);
             }])
                 ->orderBy('created_at', 'desc')
                 ->get();
             return response()->json($courses, 200);
-        } else if ($request->has('userId')) {
+        } else if ($user->id) {
             $courses = Course::where('isPublished', true)->with(['category', 'chapters' => function ($query) {
                 $query
                     ->where('isPublished', true);
             }, 'purchases' => function ($query) use ($request) {
-                $query->where('userId', $request->input('userId'));
+                $query->where('userId', $user->id);
             }])
                 ->orderBy('created_at', 'desc')
                 ->get();
@@ -127,13 +128,14 @@ class UserController extends Controller
 
     public function lecture(Request $request)
     {
+        $user = Auth::user();
         if ($request->has('courseId') && $request->has('chapterId') && $request->has('purchase')) {
             $purchase = null;
             $courseId = $request->input('courseId');
             $chapterId = $request->input('chapterId');
             $lectureId = $request->input('lectureId');
-            if ($request->has('userId')) {
-                $userId = $request->input('userId');
+            if ($user->id) {
+                $userId = $user->id;
                 global $purchase;
                 $purchase = Purchase::where('userId', $userId)->where('courseId', $courseId)->first();
             }
@@ -193,8 +195,8 @@ class UserController extends Controller
             $chapterProgress = null;
             $lectureProgress = null;
 
-            if ($request->has('userId')) {
-                $userId = $request->input('userId');
+            if ($user->id) {
+                $userId = $user->id;
                 global $chapterProgress, $lectureProgress;
 
                 $chapterProgress = ChapterProgress::where('userId', $userId)->where('chapterId', $chapterId)->first();
@@ -203,7 +205,7 @@ class UserController extends Controller
             }
 
             return response()->json(["lecture" => $lecture, "chapter" => $chapter, "course" => $course, "muxData" => $muxData, "lectureAttachments" => $lectureAttachment, "chapterAttachments" => $chapterAttachment, "nextChapter" => $nextChapter, "nextLecture" => $nextLecture, "chapterProgress" => $chapterProgress, "lectureProgress" => $lectureProgress, "purchase" => $purchase], 200);
-        } else if ($request->has('userId') && $request->has('courseId') && $request->has('chapterId') && $request->has('lectureId')) {
+        } else if ($user->id && $request->has('courseId') && $request->has('chapterId') && $request->has('lectureId')) {
             $lectureId = $request->input('lectureId');
             $courseId = $request->input('courseId');
             $chapterId = $request->input('chapterId');
@@ -221,8 +223,9 @@ class UserController extends Controller
 
     public function progress(Request $request)
     {
-        if ($request->has('userId') && $request->has('courseId')) {
-            $userId = $request->input('userId');
+        $user = Auth::user();
+        if ($user->id && $request->has('courseId')) {
+            $userId = $user->id;
             $courseId = $request->input('courseId');
             $course = Course::with(['chapters' => function ($query) use ($userId) {
                 $query
@@ -238,8 +241,8 @@ class UserController extends Controller
                     }]);
             }])->find($courseId);
             return response()->json($course, 200);
-        } else if ($request->has('userId') && $request->has('chapterIds')) {
-            $validCompletedChapters = ChapterProgress::where('userId', $request->input('userId'))
+        } else if ($user->id && $request->has('chapterIds')) {
+            $validCompletedChapters = ChapterProgress::where('userId', $user->id)
                 ->whereIn('chapterId', $request->input('chapterIds'))
                 ->where('isCompleted', true)
                 ->count();
@@ -250,8 +253,9 @@ class UserController extends Controller
 
     public function purchase(Request $request)
     {
-        if ($request->has('userId')) {
-            $userId = $request->input('userId');
+        $user = Auth::user();
+        if ($user->id) {
+            $userId = $user->id;
             $purchases = Purchase::whereHas('course', function ($query) use ($userId) {
                 $query->where('userId', $userId);
             })->with('course')->get();

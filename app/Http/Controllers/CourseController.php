@@ -7,6 +7,7 @@ use App\Models\Course;
 use App\Models\MuxData;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class CourseController extends Controller
 {
@@ -46,9 +47,8 @@ class CourseController extends Controller
                             $query
                                 ->where('isPublished', true);
                         }])
-                        ->orderBy('created_at', 'desc')
-                        ->get();
-                }]);
+                        ->orderBy('created_at', 'desc');
+                }])->get();
             return response()->json($courses, 200);
         } else {
             $courses = Course::where('isPublished', true)

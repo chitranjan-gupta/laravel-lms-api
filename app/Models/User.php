@@ -39,6 +39,7 @@ class User extends Authenticatable implements JWTSubject
     protected $fillable = [
         'name',
         'email',
+        'username',
         'password',
         'role'
     ];
@@ -64,6 +65,10 @@ class User extends Authenticatable implements JWTSubject
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    public function autofill(){
+        return $this->hasOne(Autofill::class, 'userId', 'id');
     }
 
     public function courses(){

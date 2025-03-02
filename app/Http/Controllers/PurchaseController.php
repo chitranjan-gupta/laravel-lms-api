@@ -4,19 +4,19 @@ namespace App\Http\Controllers;
 
 use App\Models\Purchase;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class PurchaseController extends Controller
 {
     public function purchases(Request $request)
     {
-        if ($request->has("userId") && $request->has('courseId')) {
-            $userId = $request->input("userId");
+        $user = Auth::user();
+        if ($user->id && $request->has('courseId')) {
             $courseId = $request->input("courseId");
-            $purchase = Purchase::where('userId', $userId)->where('courseId', $courseId)->first();
+            $purchase = Purchase::where('userId', $user->id)->where('courseId', $courseId)->first();
             return response()->json($purchase, 200);
-        } else if ($request->has('userId')) {
-            $userId = $request->input("userId");
-            $purchasedCourse = Purchase::where('userId', $userId)
+        } else if ($user->id) {
+            $purchasedCourse = Purchase::where('userId', $user->id)
                 ->with(['course' => function ($query) {
                     $query
                         ->with('category')
@@ -25,7 +25,8 @@ class PurchaseController extends Controller
                         }]);
                 }])->get();
             return response()->json($purchasedCourse, 200);
+        } else {
+            return response('Not Found', 404);
         }
-        return response('Not Found', 404);
     }
 }
