@@ -19,7 +19,7 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => [env('FRONTEND_APP_URL')],
+    'allowed_origins' => explode(',', env('CORS_VALUES')),
 
     'allowed_origins_patterns' => [],
 

@@ -14,9 +14,10 @@ class StripeController extends Controller
 {
     public function checkout(Request $request, $courseId)
     {
-        if (Auth::user()) {
+        $origin = $request->server('HTTP_ORIGIN');
+        $user = Auth::user();
+        if ($user && $origin) {
             if ($courseId) {
-                $user = Auth::user();
                 $course = Course::where('id', $courseId)->where('isPublished', true)->first();
                 if (!$course) {
                     return response('Not Found', 404);
@@ -39,7 +40,7 @@ class StripeController extends Controller
                         'stripeCustomerId' => $customer->id
                     ]);
                 }
-
+                $originUrl = (in_array(strtolower($origin), array_map('strtolower', explode(',', env('CORS_VALUES'))))) ? $origin : env('FRONTEND_APP_URL');
                 $session = Stripe\Checkout\Session::create([
                     'customer' => $stripeCustomer->stripeCustomerId,
                     'line_items' => [
@@ -57,8 +58,8 @@ class StripeController extends Controller
                         ]
                     ],
                     'mode' => 'payment',
-                    'success_url' => env('FRONTEND_APP_URL') . '/courses/' . $course->id . '?success=1',
-                    'cancel_url' => env('FRONTEND_APP_URL') . '/courses/' . $course->id . '?canceled=1',
+                    'success_url' => $originUrl . '/courses/' . $course->id . '?success=1',
+                    'cancel_url' => $originUrl . '/courses/' . $course->id . '?canceled=1',
                     'metadata' => [
                         'courseId' => $course->id,
                         'userId' => $user->id
